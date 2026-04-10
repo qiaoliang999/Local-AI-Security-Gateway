@@ -1,6 +1,7 @@
 import re
 import json
 import logging
+import datetime
 from typing import Any, Dict
 
 # Set up basic logging
@@ -18,6 +19,7 @@ class DLPEngine:
         # Keep track of redacted values to un-redact them later if needed
         self.vault = {}
         self.redact_counter = 0
+        self.incident_log = []
 
     def redact_text(self, text: str) -> str:
         """Scan text and replace sensitive patterns with placeholders."""
@@ -38,6 +40,16 @@ class DLPEngine:
                 self.vault[placeholder] = secret_value
                 logger.warning(f"❌ [DLP INTERCEPT] Sensitive {entity_type} detected!")
                 logger.info(f"🛡️  [DLP SECURED] Replaced with placeholder {placeholder}")
+                
+                # Obfuscate original for logs
+                obfuscated = secret_value[:2] + "****" + secret_value[-2:] if len(secret_value) > 4 else "****"
+                self.incident_log.append({
+                    "id": self.redact_counter,
+                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "type": entity_type,
+                    "placeholder": placeholder,
+                    "obfuscated": obfuscated
+                })
                 
                 redacted_text = redacted_text[:start] + placeholder + redacted_text[end:]
                 self.redact_counter += 1

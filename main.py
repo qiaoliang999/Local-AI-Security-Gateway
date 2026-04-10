@@ -1,11 +1,31 @@
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 import httpx
 import logging
+import os
 
 from dlp import dlp_engine
 
 app = FastAPI(title="Local AI Security Gateway")
+
+# Ensure static dir exists
+os.makedirs("static", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/api/logs")
+async def get_logs():
+    """Returns the list of intercepted sensitive data events."""
+    return {"logs": list(reversed(dlp_engine.incident_log)), "total_intercepts": len(dlp_engine.incident_log)}
+
+@app.get("/")
+async def dashboard():
+    """Serves the security audit dashboard."""
+    html_path = os.path.join("static", "index.html")
+    if os.path.exists(html_path):
+        with open(html_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse(content="<h1>Dashboard UI not found. Please ensure static/index.html exists.</h1>")
 
 OPENAI_URL = "https://api.openai.com"
 
@@ -40,19 +60,14 @@ async def intercept_and_proxy(request: Request, call_next):
     
     # Support for upstream VPNs/Proxies (e.g., Clash, V2Ray) via environment variables
     import os
-    proxies = {}
     http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
     https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
-    
-    if http_proxy:
-        proxies["http://"] = http_proxy
-    if https_proxy:
-        proxies["https://"] = https_proxy
+    proxy_url = https_proxy or http_proxy
         
-    if proxies:
-        logging.info(f"🔗 [PROXY CHAIN] Routing traffic through upstream VPN/Proxy: {proxies}")
+    if proxy_url:
+        logging.info(f"🔗 [PROXY CHAIN] Routing traffic through upstream VPN/Proxy: {proxy_url}")
 
-    async with httpx.AsyncClient(proxies=proxies if proxies else None) as client:
+    async with httpx.AsyncClient(proxy=proxy_url) as client:
         try:
             response = await client.request(
                 method=request.method,

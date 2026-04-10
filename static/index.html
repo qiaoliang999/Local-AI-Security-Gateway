@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local AI Security Gateway - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-white min-h-screen font-sans antialiased">
+    
+    <!-- Navbar -->
+    <nav class="bg-gray-800 border-b border-gray-700 py-4 px-6 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-shield-halved text-emerald-400 text-2xl"></i>
+            <h1 class="text-xl font-bold tracking-tight">AI Security Gateway</h1>
+        </div>
+        <div class="flex items-center space-x-2 text-sm text-gray-400">
+            <span class="flex h-3 w-3 relative">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <span>Proxy Active</span>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        
+        <!-- Stats Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg flex items-center space-x-4">
+                <div class="p-3 bg-blue-500/20 rounded-lg text-blue-400">
+                    <i class="fa-solid fa-eye text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Monitoring Mode</p>
+                    <p class="text-2xl font-bold">Transparent</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg flex items-center space-x-4">
+                <div class="p-3 bg-rose-500/20 rounded-lg text-rose-400">
+                    <i class="fa-solid fa-ban text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Total Intercepts</p>
+                    <p class="text-3xl font-bold text-white" id="total-intercepts">0</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg flex items-center space-x-4">
+                <div class="p-3 bg-emerald-500/20 rounded-lg text-emerald-400">
+                    <i class="fa-solid fa-check-double text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Status</p>
+                    <p class="text-2xl font-bold text-emerald-400">Zero Leaks</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Log Table -->
+        <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden">
+            <div class="px-6 py-5 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+                <h2 class="text-lg font-semibold text-white"><i class="fa-solid fa-list-check mr-2 text-gray-400"></i>DLP Audit Log</h2>
+                <button onclick="fetchLogs()" class="text-sm text-gray-400 hover:text-white transition-colors duration-200">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="uppercase text-gray-400 bg-gray-900/50 border-b border-gray-700">
+                        <tr>
+                            <th class="px-6 py-4 font-semibold">Time</th>
+                            <th class="px-6 py-4 font-semibold">Entity Type</th>
+                            <th class="px-6 py-4 font-semibold">Replaced With</th>
+                            <th class="px-6 py-4 font-semibold text-center">Original (Obfuscated)</th>
+                            <th class="px-6 py-4 font-semibold text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-table-body" class="divide-y divide-gray-700/50">
+                        <!-- Rows will be populated here by JS -->
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                                <i class="fa-solid fa-shield-virus text-4xl mb-3 opacity-50 block"></i>
+                                <p>No sensitive data intercepts recorded yet.</p>
+                                <p class="text-xs mt-1">Waiting for API traffic...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        async function fetchLogs() {
+            try {
+                const response = await fetch('/api/logs');
+                const data = await response.json();
+                
+                document.getElementById('total-intercepts').innerText = data.total_intercepts;
+                
+                const tbody = document.getElementById('log-table-body');
+                
+                if (data.logs && data.logs.length > 0) {
+                    tbody.innerHTML = ''; // Clear empty state
+                    
+                    data.logs.forEach(log => {
+                        // Determine color based on entity type
+                        let badgeColor = 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+                        if (log.type === 'AWS_KEY') badgeColor = 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+                        if (log.type.includes('API_KEY')) badgeColor = 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-gray-700/30 transition-colors group';
+                        tr.innerHTML = `
+                            <td class="px-6 py-4 text-gray-400 font-mono text-xs">${log.timestamp}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2.5 py-1 rounded-md text-xs font-semibold border ${badgeColor}">
+                                    ${log.type}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <code class="bg-gray-900 px-2 py-1 rounded text-emerald-400 border border-gray-700/50">${log.placeholder}</code>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="text-gray-500 font-mono text-xs bg-gray-900/50 px-2 py-1 rounded select-none group-hover:text-gray-400 transition-colors">${log.obfuscated}</span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="text-rose-400 text-xs font-bold bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20"><i class="fa-solid fa-xmark mr-1"></i>BLOCKED</span>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+            }
+        }
+
+        // Fetch logs immediately and then every 3 seconds
+        fetchLogs();
+        setInterval(fetchLogs, 3000);
+    </script>
+</body>
+</html>
