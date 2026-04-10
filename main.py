@@ -38,7 +38,21 @@ async def intercept_and_proxy(request: Request, call_next):
     # Exclude headers that might cause issues like content-length (which changes) or host
     headers = {k: v for k, v in request.headers.items() if k.lower() not in ('host', 'content-length')}
     
-    async with httpx.AsyncClient() as client:
+    # Support for upstream VPNs/Proxies (e.g., Clash, V2Ray) via environment variables
+    import os
+    proxies = {}
+    http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
+    https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+    
+    if http_proxy:
+        proxies["http://"] = http_proxy
+    if https_proxy:
+        proxies["https://"] = https_proxy
+        
+    if proxies:
+        logging.info(f"🔗 [PROXY CHAIN] Routing traffic through upstream VPN/Proxy: {proxies}")
+
+    async with httpx.AsyncClient(proxies=proxies if proxies else None) as client:
         try:
             response = await client.request(
                 method=request.method,
