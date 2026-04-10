@@ -3,147 +3,716 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local AI Security Gateway - Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>AI Security Gateway — Dashboard</title>
+    <meta name="description" content="Real-time DLP security monitoring for AI API traffic">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a2035;
+            --bg-elevated: #1f2b47;
+            --border-color: rgba(99, 117, 171, 0.15);
+            --border-glow: rgba(99, 179, 237, 0.25);
+            --text-primary: #e8ecf4;
+            --text-secondary: #8899b8;
+            --text-muted: #5a6a88;
+            --accent-blue: #60a5fa;
+            --accent-emerald: #34d399;
+            --accent-rose: #fb7185;
+            --accent-amber: #fbbf24;
+            --accent-violet: #a78bfa;
+            --accent-cyan: #22d3ee;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-glow: linear-gradient(135deg, rgba(99,179,237,0.12) 0%, rgba(118,75,162,0.08) 100%);
+            --shadow-card: 0 4px 24px rgba(0,0,0,0.25), 0 1px 4px rgba(0,0,0,0.15);
+            --shadow-glow: 0 0 30px rgba(99,179,237,0.08);
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --transition-fast: 150ms ease;
+            --transition-normal: 250ms ease;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Animated background ───────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(99,179,237,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(118,75,162,0.06) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Navbar ────────────────────────────────────── */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 2rem;
+            height: 64px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-brand .logo-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+            box-shadow: 0 2px 12px rgba(102,126,234,0.4);
+        }
+
+        .nav-brand h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-brand .version {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--accent-violet);
+            background: rgba(167,139,250,0.12);
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(167,139,250,0.2);
+        }
+
+        .nav-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-emerald);
+            box-shadow: 0 0 8px rgba(52,211,153,0.6);
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 8px rgba(52,211,153,0.6); }
+            50% { box-shadow: 0 0 16px rgba(52,211,153,0.9); }
+        }
+
+        /* ── Main Layout ───────────────────────────────── */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* ── Stats Grid ────────────────────────────────── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: var(--shadow-card);
+            transition: transform var(--transition-normal), border-color var(--transition-normal);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-glow);
+        }
+
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.blue { background: rgba(96,165,250,0.12); color: var(--accent-blue); }
+        .stat-icon.rose { background: rgba(251,113,133,0.12); color: var(--accent-rose); }
+        .stat-icon.emerald { background: rgba(52,211,153,0.12); color: var(--accent-emerald); }
+        .stat-icon.amber { background: rgba(251,191,36,0.12); color: var(--accent-amber); }
+
+        .stat-info { flex: 1; }
+
+        .stat-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1;
+        }
+
+        .stat-value.emerald { color: var(--accent-emerald); }
+        .stat-value.rose { color: var(--accent-rose); }
+
+        /* ── Chart + Type Breakdown Section ─────────────── */
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2col { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .panel-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title i { color: var(--text-muted); }
+
+        .panel-body { padding: 1.5rem; }
+
+        /* Type Breakdown Bars */
+        .type-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .type-bar-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            min-width: 120px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .type-bar-track {
+            flex: 1;
+            height: 8px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .type-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        .type-bar-count {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            min-width: 32px;
+            text-align: right;
+        }
+
+        /* ── Providers Grid ────────────────────────────── */
+        .providers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .provider-chip {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 14px;
+            text-align: center;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all var(--transition-normal);
+        }
+
+        .provider-chip:hover {
+            border-color: var(--accent-violet);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+        }
+
+        .provider-chip.active {
+            border-color: var(--accent-emerald);
+            color: var(--accent-emerald);
+            background: rgba(52,211,153,0.06);
+        }
+
+        .provider-chip i {
+            display: block;
+            font-size: 1.1rem;
+            margin-bottom: 6px;
+        }
+
+        /* ── Audit Log Table ───────────────────────────── */
+        .log-table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            text-align: left;
+            font-size: 0.84rem;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: rgba(0,0,0,0.2);
+        }
+
+        th {
+            padding: 14px 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(99,117,171,0.06);
+            white-space: nowrap;
+        }
+
+        tr {
+            transition: background var(--transition-fast);
+        }
+
+        tbody tr:hover {
+            background: rgba(99,179,237,0.03);
+        }
+
+        .time-cell {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+
+        .badge.email { background: rgba(96,165,250,0.12); color: var(--accent-blue); border-color: rgba(96,165,250,0.2); }
+        .badge.aws { background: rgba(251,191,36,0.12); color: var(--accent-amber); border-color: rgba(251,191,36,0.2); }
+        .badge.api-key { background: rgba(167,139,250,0.12); color: var(--accent-violet); border-color: rgba(167,139,250,0.2); }
+        .badge.pii { background: rgba(251,113,133,0.12); color: var(--accent-rose); border-color: rgba(251,113,133,0.2); }
+        .badge.infra { background: rgba(34,211,238,0.12); color: var(--accent-cyan); border-color: rgba(34,211,238,0.2); }
+        .badge.default { background: rgba(138,153,184,0.12); color: var(--text-secondary); border-color: rgba(138,153,184,0.2); }
+
+        .code-chip {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            background: rgba(0,0,0,0.3);
+            color: var(--accent-emerald);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(52,211,153,0.1);
+        }
+
+        .obfuscated {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+            user-select: none;
+            transition: color var(--transition-fast);
+        }
+
+        tr:hover .obfuscated { color: var(--text-secondary); }
+
+        .blocked-tag {
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: var(--accent-rose);
+            background: rgba(251,113,133,0.08);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(251,113,133,0.15);
+        }
+
+        /* ── Empty State ───────────────────────────────── */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .empty-state p {
+            margin-bottom: 0.4rem;
+        }
+
+        .empty-state .hint {
+            font-size: 0.78rem;
+            opacity: 0.6;
+        }
+
+        /* ── Refresh Button ────────────────────────────── */
+        .btn-icon {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 6px 14px;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all var(--transition-fast);
+        }
+
+        .btn-icon:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-blue);
+            background: rgba(96,165,250,0.06);
+        }
+
+        /* ── Animations ────────────────────────────────── */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.35s ease forwards;
+        }
+
+        .delay-1 { animation-delay: 0.05s; opacity: 0; }
+        .delay-2 { animation-delay: 0.1s; opacity: 0; }
+        .delay-3 { animation-delay: 0.15s; opacity: 0; }
+        .delay-4 { animation-delay: 0.2s; opacity: 0; }
+
+        /* ── Footer ────────────────────────────────────── */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+        }
+
+        footer a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        footer a:hover { text-decoration: underline; }
+    </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen font-sans antialiased">
-    
+<body>
     <!-- Navbar -->
-    <nav class="bg-gray-800 border-b border-gray-700 py-4 px-6 flex justify-between items-center shadow-md">
-        <div class="flex items-center space-x-3">
-            <i class="fa-solid fa-shield-halved text-emerald-400 text-2xl"></i>
-            <h1 class="text-xl font-bold tracking-tight">AI Security Gateway</h1>
+    <nav>
+        <div class="nav-brand">
+            <div class="logo-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <h1>AI Security Gateway</h1>
+            <span class="version">v2.0</span>
         </div>
-        <div class="flex items-center space-x-2 text-sm text-gray-400">
-            <span class="flex h-3 w-3 relative">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-            </span>
+        <div class="nav-status">
+            <div class="status-dot"></div>
             <span>Proxy Active</span>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <div class="max-w-6xl mx-auto px-4 py-8">
-        
-        <!-- Stats Row -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg flex items-center space-x-4">
-                <div class="p-3 bg-blue-500/20 rounded-lg text-blue-400">
-                    <i class="fa-solid fa-eye text-xl"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Monitoring Mode</p>
-                    <p class="text-2xl font-bold">Transparent</p>
+    <div class="container">
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card animate-in delay-1">
+                <div class="stat-icon blue"><i class="fa-solid fa-satellite-dish"></i></div>
+                <div class="stat-info">
+                    <div class="stat-label">DLP Patterns</div>
+                    <div class="stat-value" id="stat-patterns">—</div>
                 </div>
             </div>
-
-            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg flex items-center space-x-4">
-                <div class="p-3 bg-rose-500/20 rounded-lg text-rose-400">
-                    <i class="fa-solid fa-ban text-xl"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Total Intercepts</p>
-                    <p class="text-3xl font-bold text-white" id="total-intercepts">0</p>
+            <div class="stat-card animate-in delay-2">
+                <div class="stat-icon rose"><i class="fa-solid fa-shield-virus"></i></div>
+                <div class="stat-info">
+                    <div class="stat-label">Total Intercepts</div>
+                    <div class="stat-value rose" id="stat-intercepts">0</div>
                 </div>
             </div>
-
-            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg flex items-center space-x-4">
-                <div class="p-3 bg-emerald-500/20 rounded-lg text-emerald-400">
-                    <i class="fa-solid fa-check-double text-xl"></i>
+            <div class="stat-card animate-in delay-3">
+                <div class="stat-icon emerald"><i class="fa-solid fa-lock"></i></div>
+                <div class="stat-info">
+                    <div class="stat-label">Leak Status</div>
+                    <div class="stat-value emerald" id="stat-status">Zero Leaks</div>
                 </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Status</p>
-                    <p class="text-2xl font-bold text-emerald-400">Zero Leaks</p>
+            </div>
+            <div class="stat-card animate-in delay-4">
+                <div class="stat-icon amber"><i class="fa-solid fa-server"></i></div>
+                <div class="stat-info">
+                    <div class="stat-label">Default Provider</div>
+                    <div class="stat-value" id="stat-provider" style="font-size:1.1rem">—</div>
                 </div>
             </div>
         </div>
 
-        <!-- Audit Log Table -->
-        <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden">
-            <div class="px-6 py-5 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
-                <h2 class="text-lg font-semibold text-white"><i class="fa-solid fa-list-check mr-2 text-gray-400"></i>DLP Audit Log</h2>
-                <button onclick="fetchLogs()" class="text-sm text-gray-400 hover:text-white transition-colors duration-200">
-                    <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+        <!-- Type Breakdown + Providers -->
+        <div class="grid-2col">
+            <div class="panel animate-in delay-2">
+                <div class="panel-header">
+                    <div class="panel-title"><i class="fa-solid fa-chart-bar"></i> Intercept Breakdown</div>
+                </div>
+                <div class="panel-body" id="breakdown-body">
+                    <div class="empty-state" style="padding:2rem">
+                        <p style="font-size:0.85rem">No data yet</p>
+                    </div>
+                </div>
+            </div>
+            <div class="panel animate-in delay-3">
+                <div class="panel-header">
+                    <div class="panel-title"><i class="fa-solid fa-plug"></i> Supported Providers</div>
+                </div>
+                <div class="panel-body">
+                    <div class="providers-grid" id="providers-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Log -->
+        <div class="panel animate-in delay-4">
+            <div class="panel-header">
+                <div class="panel-title"><i class="fa-solid fa-list-check"></i> DLP Audit Log</div>
+                <button class="btn-icon" onclick="fetchLogs()">
+                    <i class="fa-solid fa-rotate-right"></i> Refresh
                 </button>
             </div>
-            
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm whitespace-nowrap">
-                    <thead class="uppercase text-gray-400 bg-gray-900/50 border-b border-gray-700">
+            <div class="log-table-wrap">
+                <table>
+                    <thead>
                         <tr>
-                            <th class="px-6 py-4 font-semibold">Time</th>
-                            <th class="px-6 py-4 font-semibold">Entity Type</th>
-                            <th class="px-6 py-4 font-semibold">Replaced With</th>
-                            <th class="px-6 py-4 font-semibold text-center">Original (Obfuscated)</th>
-                            <th class="px-6 py-4 font-semibold text-right">Action</th>
+                            <th>Time</th>
+                            <th>Detection Type</th>
+                            <th>Replaced With</th>
+                            <th style="text-align:center">Original (Masked)</th>
+                            <th style="text-align:right">Action</th>
                         </tr>
                     </thead>
-                    <tbody id="log-table-body" class="divide-y divide-gray-700/50">
-                        <!-- Rows will be populated here by JS -->
+                    <tbody id="log-table-body">
                         <tr>
-                            <td colspan="5" class="px-6 py-12 text-center text-gray-500">
-                                <i class="fa-solid fa-shield-virus text-4xl mb-3 opacity-50 block"></i>
-                                <p>No sensitive data intercepts recorded yet.</p>
-                                <p class="text-xs mt-1">Waiting for API traffic...</p>
+                            <td colspan="5">
+                                <div class="empty-state">
+                                    <i class="fa-solid fa-shield-virus"></i>
+                                    <p>No sensitive data intercepts recorded yet.</p>
+                                    <p class="hint">Waiting for AI API traffic through the gateway…</p>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
-        
     </div>
 
+    <footer>
+        Built with ❤️ by <a href="https://github.com/qiaoliang999" target="_blank">Qiao Liang</a>
+        &nbsp;·&nbsp; Local AI Security Gateway v2.0
+    </footer>
+
     <script>
+        // Color palette for type bars
+        const TYPE_COLORS = {
+            'EMAIL':           { bg: 'var(--accent-blue)',    badge: 'email' },
+            'AWS_ACCESS_KEY':  { bg: 'var(--accent-amber)',   badge: 'aws' },
+            'AWS_SECRET_KEY':  { bg: 'var(--accent-amber)',   badge: 'aws' },
+            'OPENAI_KEY':      { bg: 'var(--accent-violet)',  badge: 'api-key' },
+            'OPENAI_KEY_V2':   { bg: 'var(--accent-violet)',  badge: 'api-key' },
+            'ANTHROPIC_KEY':   { bg: 'var(--accent-violet)',  badge: 'api-key' },
+            'GOOGLE_AI_KEY':   { bg: 'var(--accent-violet)',  badge: 'api-key' },
+            'GROQ_KEY':        { bg: 'var(--accent-violet)',  badge: 'api-key' },
+            'DEEPSEEK_KEY':    { bg: 'var(--accent-violet)',  badge: 'api-key' },
+            'COHERE_KEY':      { bg: 'var(--accent-violet)',  badge: 'api-key' },
+            'HUGGINGFACE_TOKEN': { bg: 'var(--accent-violet)', badge: 'api-key' },
+            'GENERIC_SECRET':  { bg: 'var(--accent-violet)',  badge: 'api-key' },
+            'PHONE_US':        { bg: 'var(--accent-rose)',    badge: 'pii' },
+            'PHONE_CN':        { bg: 'var(--accent-rose)',    badge: 'pii' },
+            'SSN':             { bg: 'var(--accent-rose)',    badge: 'pii' },
+            'CREDIT_CARD':     { bg: 'var(--accent-rose)',    badge: 'pii' },
+            'CN_ID_CARD':      { bg: 'var(--accent-rose)',    badge: 'pii' },
+            'DATABASE_URL':    { bg: 'var(--accent-cyan)',    badge: 'infra' },
+            'PRIVATE_KEY':     { bg: 'var(--accent-cyan)',    badge: 'infra' },
+            'JWT_TOKEN':       { bg: 'var(--accent-cyan)',    badge: 'infra' },
+            'GCP_SERVICE_KEY': { bg: 'var(--accent-cyan)',    badge: 'infra' },
+            'AZURE_KEY':       { bg: 'var(--accent-cyan)',    badge: 'infra' },
+            'PRIVATE_IP':      { bg: 'var(--accent-cyan)',    badge: 'infra' },
+        };
+
+        function getBadgeClass(type) {
+            return (TYPE_COLORS[type] || {}).badge || 'default';
+        }
+
+        function getBarColor(type) {
+            return (TYPE_COLORS[type] || {}).bg || 'var(--text-muted)';
+        }
+
+        // Fetch and render logs
         async function fetchLogs() {
             try {
-                const response = await fetch('/api/logs');
-                const data = await response.json();
-                
-                document.getElementById('total-intercepts').innerText = data.total_intercepts;
-                
-                const tbody = document.getElementById('log-table-body');
-                
-                if (data.logs && data.logs.length > 0) {
-                    tbody.innerHTML = ''; // Clear empty state
-                    
-                    data.logs.forEach(log => {
-                        // Determine color based on entity type
-                        let badgeColor = 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-                        if (log.type === 'AWS_KEY') badgeColor = 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-                        if (log.type.includes('API_KEY')) badgeColor = 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+                const res = await fetch('/api/logs');
+                const data = await res.json();
 
-                        const tr = document.createElement('tr');
-                        tr.className = 'hover:bg-gray-700/30 transition-colors group';
-                        tr.innerHTML = `
-                            <td class="px-6 py-4 text-gray-400 font-mono text-xs">${log.timestamp}</td>
-                            <td class="px-6 py-4">
-                                <span class="px-2.5 py-1 rounded-md text-xs font-semibold border ${badgeColor}">
-                                    ${log.type}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <code class="bg-gray-900 px-2 py-1 rounded text-emerald-400 border border-gray-700/50">${log.placeholder}</code>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="text-gray-500 font-mono text-xs bg-gray-900/50 px-2 py-1 rounded select-none group-hover:text-gray-400 transition-colors">${log.obfuscated}</span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <span class="text-rose-400 text-xs font-bold bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20"><i class="fa-solid fa-xmark mr-1"></i>BLOCKED</span>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
+                document.getElementById('stat-intercepts').textContent = data.total_intercepts;
+                document.getElementById('stat-patterns').textContent = data.patterns_loaded;
+
+                // Type breakdown bars
+                const breakdown = data.type_breakdown || {};
+                const breakdownBody = document.getElementById('breakdown-body');
+                const types = Object.entries(breakdown).sort((a, b) => b[1] - a[1]);
+                const maxCount = types.length > 0 ? types[0][1] : 1;
+
+                if (types.length > 0) {
+                    breakdownBody.innerHTML = types.map(([type, count]) => `
+                        <div class="type-bar-item">
+                            <span class="type-bar-label">${type}</span>
+                            <div class="type-bar-track">
+                                <div class="type-bar-fill" style="width:${(count/maxCount)*100}%;background:${getBarColor(type)}"></div>
+                            </div>
+                            <span class="type-bar-count">${count}</span>
+                        </div>
+                    `).join('');
                 }
-            } catch (error) {
-                console.error('Error fetching logs:', error);
+
+                // Log table
+                const tbody = document.getElementById('log-table-body');
+                if (data.logs && data.logs.length > 0) {
+                    tbody.innerHTML = data.logs.map(log => `
+                        <tr>
+                            <td class="time-cell">${log.timestamp}</td>
+                            <td><span class="badge ${getBadgeClass(log.type)}">${log.type}</span></td>
+                            <td><code class="code-chip">${log.placeholder}</code></td>
+                            <td style="text-align:center"><span class="obfuscated">${log.obfuscated}</span></td>
+                            <td style="text-align:right"><span class="blocked-tag"><i class="fa-solid fa-xmark"></i> BLOCKED</span></td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('Failed to fetch logs:', err);
             }
         }
 
-        // Fetch logs immediately and then every 3 seconds
+        // Fetch providers list
+        async function fetchProviders() {
+            try {
+                const res = await fetch('/api/providers');
+                const data = await res.json();
+
+                const defaultKey = data.default;
+                document.getElementById('stat-provider').textContent =
+                    data.providers[defaultKey]?.name || defaultKey;
+
+                const grid = document.getElementById('providers-grid');
+                const icons = {
+                    openai: 'fa-robot', anthropic: 'fa-brain', google: 'fa-google',
+                    groq: 'fa-bolt', mistral: 'fa-wind', deepseek: 'fa-magnifying-glass-chart',
+                    xai: 'fa-x', cohere: 'fa-layer-group', together: 'fa-people-group',
+                    openrouter: 'fa-route', ollama: 'fa-house-laptop',
+                };
+
+                grid.innerHTML = Object.entries(data.providers).map(([key, p]) => `
+                    <div class="provider-chip ${key === defaultKey ? 'active' : ''}">
+                        <i class="fa-solid ${icons[key] || 'fa-plug'}"></i>
+                        ${p.name}
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Failed to fetch providers:', err);
+            }
+        }
+
+        // Init
         fetchLogs();
+        fetchProviders();
         setInterval(fetchLogs, 3000);
     </script>
 </body>
