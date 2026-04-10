@@ -27,7 +27,7 @@ async def intercept_and_proxy(request: Request, call_next):
         import json
         json_payload = json.loads(payload)
         redacted_payload = dlp_engine.redact_payload(json_payload)
-        logging.info("✂️  [REDACT] Payload sanitized successfully.")
+        logging.info("✅ [REDACT] Payload sanitized successfully.")
         
     except json.JSONDecodeError:
         # If it's not valid JSON, we don't proxy it right now for safety

@@ -36,7 +36,8 @@ class DLPEngine:
 
                 placeholder = f"[REDACTED_{entity_type}_{self.redact_counter}]"
                 self.vault[placeholder] = secret_value
-                logger.warning(f"🛡️  [DLP INTERCEPT] Sensitive {entity_type} detected and secured!")
+                logger.warning(f"❌ [DLP INTERCEPT] Sensitive {entity_type} detected!")
+                logger.info(f"🛡️  [DLP SECURED] Replaced with placeholder {placeholder}")
                 
                 redacted_text = redacted_text[:start] + placeholder + redacted_text[end:]
                 self.redact_counter += 1
