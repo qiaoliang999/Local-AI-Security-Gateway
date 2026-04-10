@@ -35,7 +35,16 @@ async def intercept_and_proxy(request: Request, call_next):
     if not request.url.path.startswith("/v1"):
         return await call_next(request)
 
-    target_url = f"{OPENAI_URL}{request.url.path}"
+    # True transparent proxying: Forward to the original intended destination
+    # e.g. api.anthropic.com or api.openai.com depending on what the client requested
+    original_url = request.url
+    target_url = str(original_url)
+    
+    # In some setups, the request might come in as just the path (e.g. if the client configured
+    # base_url = http://localhost:8000). In that specific case, we default to OpenAI for backward compatibility.
+    if request.url.hostname in ("127.0.0.1", "localhost", "0.0.0.0"):
+         target_url = f"https://api.openai.com{request.url.path}"
+         
     logging.info(f"🌐 [PROXY] Intercepting request to: {target_url}")
 
     try:
