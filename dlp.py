@@ -13,7 +13,7 @@ class DLPEngine:
         self.patterns = {
             "EMAIL": r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+",
             "AWS_KEY": r"(?i)AKIA[0-9A-Z]{16}",
-            "GENERIC_API_KEY": r"(?i)(?:key|token|secret|password)[_-]?\s*[:=]\s*['"]?([a-zA-Z0-9]{16,})['"]?"
+            "GENERIC_API_KEY": r"(?i)(?:key|token|secret|password)[_-]?\s*[:=]\s*['\"]?([a-zA-Z0-9]{16,})['\"]?"
         }
         # Keep track of redacted values to un-redact them later if needed
         self.vault = {}
@@ -36,7 +36,7 @@ class DLPEngine:
 
                 placeholder = f"[REDACTED_{entity_type}_{self.redact_counter}]"
                 self.vault[placeholder] = secret_value
-                logger.warning(f"Intercepted sensitive data: {entity_type}")
+                logger.warning(f"🛡️  [DLP INTERCEPT] Sensitive {entity_type} detected and secured!")
                 
                 redacted_text = redacted_text[:start] + placeholder + redacted_text[end:]
                 self.redact_counter += 1

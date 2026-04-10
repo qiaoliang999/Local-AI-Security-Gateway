@@ -7,7 +7,7 @@ from dlp import dlp_engine
 
 app = FastAPI(title="Local AI Security Gateway")
 
-OPENAI_URL = "https://api.openai.com/v1"
+OPENAI_URL = "https://api.openai.com"
 
 @app.middleware("http")
 async def intercept_and_proxy(request: Request, call_next):
@@ -16,7 +16,7 @@ async def intercept_and_proxy(request: Request, call_next):
         return await call_next(request)
 
     target_url = f"{OPENAI_URL}{request.url.path}"
-    logging.info(f"Intercepting request to: {target_url}")
+    logging.info(f"🌐 [PROXY] Intercepting request to: {target_url}")
 
     try:
         # Read the raw request body
@@ -27,11 +27,11 @@ async def intercept_and_proxy(request: Request, call_next):
         import json
         json_payload = json.loads(payload)
         redacted_payload = dlp_engine.redact_payload(json_payload)
-        logging.info("Request redacted successfully.")
+        logging.info("✂️  [REDACT] Payload sanitized successfully.")
         
     except json.JSONDecodeError:
         # If it's not valid JSON, we don't proxy it right now for safety
-        logging.warning("Non-JSON body detected, passing through as-is.")
+        logging.warning("⚠️ [WARN] Non-JSON body detected, passing through as-is.")
         redacted_payload = payload
 
     # Forward the modified request to OpenAI using httpx
@@ -48,7 +48,7 @@ async def intercept_and_proxy(request: Request, call_next):
                 timeout=60.0
             )
         except httpx.RequestError as exc:
-            logging.error(f"An error occurred while requesting {exc.request.url!r}.")
+            logging.error(f"❌ [ERROR] An error occurred while requesting {exc.request.url!r}.")
             raise HTTPException(status_code=502, detail="Upstream API error.")
 
     # Process the response from OpenAI
@@ -56,7 +56,7 @@ async def intercept_and_proxy(request: Request, call_next):
         response_json = response.json()
         # Run DLP Engine to un-redact placeholders back to real data so the developer sees the real variable names
         unredacted_response = dlp_engine.unredact_payload(response_json)
-        logging.info("Response un-redacted successfully.")
+        logging.info("🔄 [RESTORE] Response original values restored for local display.")
         
         # Return the modified response to the local client
         return JSONResponse(content=unredacted_response, status_code=response.status_code)
